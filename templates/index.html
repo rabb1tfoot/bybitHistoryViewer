@@ -1,0 +1,113 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>암호화폐 거래내역 분석 대시보드</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/date-fns@2.29.3/index.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@2.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>거래내역 분석 대시보드</h1>
+            <p>Bybit에서 다운로드한 자산 변동내역 CSV 파일을 업로드하여 거래 성과를 분석하세요.</p>
+        </header>
+
+        <section class="upload-section">
+            <form id="upload-form">
+                <input type="file" id="csv-files" name="files" multiple accept=".csv">
+                <div class="threshold-selector">
+                    <label for="threshold-hours">단타/스윙 기준:</label>
+                    <select id="threshold-hours" name="threshold_hours">
+                        <option value="1">1시간</option>
+                        <option value="2">2시간</option>
+                        <option value="3">3시간</option>
+                        <option value="4">4시간</option>
+                        <option value="6">6시간</option>
+                        <option value="8">8시간</option>
+                        <option value="12">12시간</option>
+                        <option value="24" selected>24시간</option>
+                    </select>
+                </div>
+                <button type="submit">업로드 및 분석</button>
+            </form>
+            <div id="upload-spinner" class="spinner" style="display: none;"></div>
+        </section>
+
+        <main id="dashboard-main" style="display: none;">
+            <section class="kpi-section">
+                <div class="kpi-card">
+                    <h2>총 누적 손익 (P&L)</h2>
+                    <p id="total-pnl">-</p>
+                </div>
+                <div class="kpi-card">
+                    <h2>총 거래 횟수</h2>
+                    <p id="trade-count">-</p>
+                </div>
+                <div class="kpi-card">
+                    <h2>단타 손익</h2>
+                    <p id="day-trade-pnl">-</p>
+                </div>
+                <div class="kpi-card">
+                    <h2>스윙 손익</h2>
+                    <p id="swing-trade-pnl">-</p>
+                </div>
+            </section>
+
+            <section class="chart-section">
+                <h2>누적 손익 추이</h2>
+                <canvas id="pnl-chart"></canvas>
+            </section>
+
+            <section class="table-section">
+                <div class="table-header">
+                    <h2>거래 상세 내역</h2>
+                    <div class="table-controls">
+                        <div class="items-per-page-selector">
+                            <span>표시 개수:</span>
+                            <button data-value="10" class="active">10</button>
+                            <button data-value="20">20</button>
+                            <button data-value="50">50</button>
+                        </div>
+                        <div class="contract-filter-selector">
+                            <label for="contract-filter">계약 필터:</label>
+                            <select id="contract-filter"></select>
+                        </div>
+                    </div>
+                </div>
+                <table id="trades-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>시작 시간</th>
+                            <th>종료 시간</th>
+                            <th>계약</th>
+                            <th>종류</th>
+                            <th>보유 시간</th>
+                            <th>거래 수수료</th>
+                            <th>펀딩비</th>
+                            <th>순손익 (Net P&L)</th>
+                            <th>누적 순손익</th>
+                            <th>누적 수수료</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="11" style="text-align: center;">파일을 업로드하여 분석을 시작하세요.</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="pagination-controls" id="pagination-controls">
+                    <!-- Pagination buttons will be inserted here -->
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>

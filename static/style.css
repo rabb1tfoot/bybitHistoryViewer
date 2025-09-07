@@ -1,0 +1,223 @@
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: #f0f2f5;
+    color: #333;
+    margin: 0;
+    padding: 0;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+header h1 {
+    font-size: 2.5rem;
+    color: #1a202c;
+}
+
+main {
+    display: grid;
+    gap: 30px;
+}
+
+.upload-section {
+    background-color: #fff;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+#upload-form {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+#upload-form input[type="file"] {
+    border: 1px solid #ccc;
+    padding: 10px;
+    border-radius: 4px;
+    margin-right: 10px;
+}
+
+#upload-form button {
+    padding: 10px 20px;
+    background-color: #4299e1;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+#upload-form button:hover {
+    background-color: #3182ce;
+}
+
+.threshold-selector {
+    margin: 0 15px;
+}
+
+.threshold-selector select {
+    padding: 10px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+}
+
+.spinner {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #3498db;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 2s linear infinite;
+    margin: 20px auto 0;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.kpi-section {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+}
+
+.kpi-card {
+    background-color: #fff;
+    padding: 25px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+.kpi-card h2 {
+    margin: 0 0 10px;
+    font-size: 1rem;
+    color: #718096;
+}
+
+.kpi-card p {
+    margin: 0;
+    font-size: 2rem;
+    font-weight: 600;
+}
+
+#total-pnl.positive, #day-trade-pnl.positive, #swing-trade-pnl.positive, td.positive {
+    color: #48bb78; /* Green */
+}
+
+#total-pnl.negative, #day-trade-pnl.negative, #swing-trade-pnl.negative, td.negative {
+    color: #f56565; /* Red */
+}
+
+.chart-section, .table-section {
+    background-color: #fff;
+    padding: 25px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.chart-section {
+    position: relative;
+    height: 400px;
+}
+
+h2 {
+    margin-top: 0;
+    font-size: 1.5rem;
+    color: #2d3748;
+}
+
+.table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.table-controls {
+    display: flex;
+    gap: 20px;
+}
+
+.table-controls .items-per-page-selector button {
+    margin-left: 5px;
+    padding: 5px 10px;
+    border: 1px solid #ccc;
+    background-color: #fff;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.table-controls .items-per-page-selector button.active {
+    background-color: #4299e1;
+    color: #fff;
+    border-color: #4299e1;
+}
+
+.contract-filter-selector select {
+    padding: 5px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+}
+
+.pagination-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 20px;
+}
+
+.pagination-controls button {
+    margin: 0 5px;
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    background-color: #fff;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.pagination-controls button.active {
+    background-color: #4299e1;
+    color: #fff;
+    border-color: #4299e1;
+}
+
+.pagination-controls button:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+table th, table td {
+    padding: 12px 15px;
+    border-bottom: 1px solid #e2e8f0;
+    text-align: left;
+}
+
+table th {
+    background-color: #f7fafc;
+    font-weight: 600;
+}
+
+table tbody tr:hover {
+    background-color: #f7fafc;
+}
