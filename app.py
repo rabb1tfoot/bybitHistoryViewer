@@ -27,8 +27,12 @@ def transform_legacy_to_uta(df):
 
     if 'Type' in df.columns:
         df['Type'] = df['Type'].str.upper()
-        type_mapping = {'FUNDING': 'SETTLEMENT'}
+        type_mapping = {'FUNDING': 'SETTLEMENT', 'LIQUIDATION': 'TRADE'}
         df['Type'] = df['Type'].replace(type_mapping)
+
+    if 'Fee Paid' in df.columns:
+        df['Fee Paid'] = pd.to_numeric(df['Fee Paid'], errors='coerce').fillna(0)
+        df['Fee Paid'] = df['Fee Paid'].apply(lambda x: -abs(x))
 
     # Ensure all required columns exist
     required_cols = ['Time(UTC)', 'Contract', 'Type', 'Direction', 'Quantity', 'Filled Price', 'Fee Paid', 'Cash Flow', 'Action', 'Funding', 'Change']
