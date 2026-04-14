@@ -8,6 +8,7 @@ let currentPage = 1;
 let itemsPerPage = 10;
 let currentContract = 'ALL';
 let pnlChart = null;
+let analysisType = 'contract';
 
 async function handleUpload(event) {
     event.preventDefault();
@@ -48,10 +49,12 @@ async function handleUpload(event) {
             throw new Error(data.error || 'Failed to analyze files.');
         }
 
+        analysisType = data.analysis_type || 'contract';
         fullTradesData = data.trades.sort((a, b) => new Date(a.close_time) - new Date(b.close_time));
-        
+
         populateContractFilter();
         setupItemsPerPageControls();
+        updateTableHeader();
         updateDashboard();
         
         mainDashboard.style.display = 'grid';
@@ -104,16 +107,64 @@ function updateDashboard() {
 
 function updateKPIs(trades) {
     const totalPnl = trades.reduce((sum, t) => sum + t.pnl, 0);
-    const dayTrades = trades.filter(t => t.type === '단타');
-    const swingTrades = trades.filter(t => t.type === '스윙');
-
     document.getElementById('total-pnl').textContent = formatCurrency(totalPnl);
     setDynamicColor(document.getElementById('total-pnl'), totalPnl);
     document.getElementById('trade-count').textContent = trades.length;
-    document.getElementById('day-trade-pnl').textContent = formatCurrency(dayTrades.reduce((sum, t) => sum + t.pnl, 0));
-    setDynamicColor(document.getElementById('day-trade-pnl'), dayTrades.reduce((sum, t) => sum + t.pnl, 0));
-    document.getElementById('swing-trade-pnl').textContent = formatCurrency(swingTrades.reduce((sum, t) => sum + t.pnl, 0));
-    setDynamicColor(document.getElementById('swing-trade-pnl'), swingTrades.reduce((sum, t) => sum + t.pnl, 0));
+
+    const dayPnlEl = document.getElementById('day-trade-pnl');
+    const swingPnlEl = document.getElementById('swing-trade-pnl');
+    const dayCard = dayPnlEl.closest('.kpi-card');
+    const swingCard = swingPnlEl.closest('.kpi-card');
+
+    if (analysisType === 'spot') {
+        const totalFees = trades.reduce((sum, t) => sum + (t.buy_price > 0 ? 0 : 0), 0);
+        dayCard.querySelector('h2').textContent = '총 수수료';
+        dayPnlEl.textContent = '거래내역 참조';
+        dayPnlEl.classList.remove('positive', 'negative');
+        swingCard.style.display = 'none';
+    } else {
+        dayCard.querySelector('h2').textContent = '단타 손익';
+        swingCard.style.display = '';
+        const dayTrades = trades.filter(t => t.type === '단타');
+        const swingTrades = trades.filter(t => t.type === '스윙');
+        const dayPnl = dayTrades.reduce((sum, t) => sum + t.pnl, 0);
+        const swingPnl = swingTrades.reduce((sum, t) => sum + t.pnl, 0);
+        dayPnlEl.textContent = formatCurrency(dayPnl);
+        setDynamicColor(dayPnlEl, dayPnl);
+        swingPnlEl.textContent = formatCurrency(swingPnl);
+        setDynamicColor(swingPnlEl, swingPnl);
+    }
+}
+
+function updateTableHeader() {
+    const thead = document.querySelector('#trades-table thead tr');
+    if (analysisType === 'spot') {
+        thead.innerHTML = `
+            <th>ID</th>
+            <th>매수 시간</th>
+            <th>매도 시간</th>
+            <th>코인</th>
+            <th>수량</th>
+            <th>매수가</th>
+            <th>매도가</th>
+            <th>손익 (P&L)</th>
+            <th>누적 손익</th>
+        `;
+    } else {
+        thead.innerHTML = `
+            <th>ID</th>
+            <th>시작 시간</th>
+            <th>종료 시간</th>
+            <th>계약</th>
+            <th>종류</th>
+            <th>보유 시간</th>
+            <th>거래 수수료</th>
+            <th>펀딩비</th>
+            <th>순손익 (Net P&L)</th>
+            <th>누적 순손익</th>
+            <th>누적 수수료</th>
+        `;
+    }
 }
 
 function renderPnlChart(trades) {
@@ -168,7 +219,8 @@ function updateTradesTable(trades) {
     const paginatedTrades = trades.slice(startIndex, endIndex);
 
     if (paginatedTrades.length === 0) {
-        tableBody.innerHTML = `<tr><td colspan="11">No trades to display for this filter.</td></tr>`;
+        const colCount = analysisType === 'spot' ? 9 : 11;
+        tableBody.innerHTML = `<tr><td colspan="${colCount}">No trades to display for this filter.</td></tr>`;
         return;
     }
 
@@ -182,22 +234,36 @@ function updateTradesTable(trades) {
         cumulativePnlCell.textContent = formatCurrency(trade.cumulative_pnl);
         setDynamicColor(cumulativePnlCell, trade.cumulative_pnl);
 
-        row.innerHTML = `
-            <td>${trade.id}</td>
-            <td>${trade.open_time}</td>
-            <td>${trade.close_time}</td>
-            <td>${trade.contract}</td>
-            <td>${trade.type}</td>
-            <td>${trade.holding_period}</td>
-            <td>${formatCurrency(trade.trade_fees)}</td>
-            <td>${formatCurrency(trade.funding_fee)}</td>
-        `;
+        if (analysisType === 'spot') {
+            row.innerHTML = `
+                <td>${trade.id}</td>
+                <td>${trade.open_time}</td>
+                <td>${trade.close_time}</td>
+                <td>${trade.contract}</td>
+                <td>${trade.quantity != null ? trade.quantity.toFixed(6) : '-'}</td>
+                <td>${formatCurrency(trade.buy_price)}</td>
+                <td>${formatCurrency(trade.sell_price)}</td>
+            `;
+        } else {
+            row.innerHTML = `
+                <td>${trade.id}</td>
+                <td>${trade.open_time}</td>
+                <td>${trade.close_time}</td>
+                <td>${trade.contract}</td>
+                <td>${trade.type}</td>
+                <td>${trade.holding_period}</td>
+                <td>${formatCurrency(trade.trade_fees)}</td>
+                <td>${formatCurrency(trade.funding_fee)}</td>
+            `;
+        }
         row.appendChild(pnlCell);
         row.appendChild(cumulativePnlCell);
 
-        const cumulativeFeesCell = document.createElement('td');
-        cumulativeFeesCell.textContent = formatCurrency(trade.cumulative_fees);
-        row.appendChild(cumulativeFeesCell);
+        if (analysisType !== 'spot') {
+            const cumulativeFeesCell = document.createElement('td');
+            cumulativeFeesCell.textContent = formatCurrency(trade.cumulative_fees);
+            row.appendChild(cumulativeFeesCell);
+        }
 
         tableBody.appendChild(row);
     });

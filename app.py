@@ -78,7 +78,7 @@ def analyze_spot_trades(df):
         df.sort_values(by='Time(UTC)', inplace=True)
 
         # Convert Amount to Decimal, coercing errors
-        df['Amount'] = pd.to_numeric(df['Amount'], errors='coerce').fillna(Decimal(0)).apply(Decimal)
+        df['Amount'] = pd.to_numeric(df['Amount'], errors='coerce').fillna(0).apply(Decimal)
 
         # Separate trades from fees
         trades_df = df[df['Type'] == 'trade'].copy()
@@ -86,7 +86,9 @@ def analyze_spot_trades(df):
 
         # Process trades to get buys and sells
         buys = trades_df[trades_df['Amount'] > 0].copy()
+        buys['is_buy'] = True
         sells = trades_df[trades_df['Amount'] < 0].copy()
+        sells['is_buy'] = False
         sells['Amount'] = sells['Amount'].abs()
 
         # Calculate total fees per coin
@@ -96,7 +98,11 @@ def analyze_spot_trades(df):
         inventory = {}
 
         # Merge buys and sells and sort by time
-        all_trades = pd.concat([buys, sells]).sort_values(by='Time(UTC)')
+        all_trades = pd.concat([buys, sells])
+        
+        # Exclude USDT from the coins we're tracking inventory for
+        all_trades = all_trades[all_trades['Coin'] != 'USDT']
+        all_trades = all_trades.sort_values(by='Time(UTC)')
 
         for _, row in all_trades.iterrows():
             coin = row['Coin']
@@ -106,8 +112,9 @@ def analyze_spot_trades(df):
             if coin not in inventory:
                 inventory[coin] = deque()
 
-            # It's a buy if the original amount was positive
-            is_buy = row['Amount'] > 0
+            # Use the pre-assigned flag to distinguish buys from sells.
+            # (sells['Amount'] was converted to abs(), so Amount sign cannot be used here)
+            is_buy = row['is_buy']
 
             if is_buy:
                 # Find the corresponding USDT transaction to get the price
@@ -154,6 +161,7 @@ def analyze_spot_trades(df):
         net_pnl = total_pnl - total_fees_paid
 
         # Basic chart
+        pnl_df = pnl_df.sort_values('sell_time').reset_index(drop=True)
         pnl_df['cumulative_pnl'] = pnl_df['pnl'].cumsum()
         chart_labels = [pnl_df['buy_time'].min().strftime('%Y-%m-%d %H:%M')]
         chart_data = [0]
@@ -162,6 +170,7 @@ def analyze_spot_trades(df):
             chart_data.append(float(row['cumulative_pnl']))
 
         return {
+            "analysis_type": "spot",
             "kpi": {
                 "totalPnl": float(net_pnl),
                 "tradeCount": len(pnl_df),
@@ -174,8 +183,9 @@ def analyze_spot_trades(df):
             "trades": [
                 {
                     "id": f"S-{i+1}",
-                    "contract": t["coin"], # Using 'contract' field for coin name
+                    "contract": t["coin"],
                     "pnl": float(t["pnl"]),
+                    "cumulative_pnl": float(t["cumulative_pnl"]),
                     "open_time": t['buy_time'].strftime('%Y-%m-%d %H:%M:%S'),
                     "close_time": t['sell_time'].strftime('%Y-%m-%d %H:%M:%S'),
                     "quantity": float(t['quantity']),
@@ -204,7 +214,7 @@ def analyze_contract_trades(df, threshold_hours=24):
         numeric_cols = ['Quantity', 'Filled Price', 'Fee Paid', 'Cash Flow', 'Funding', 'Change']
         for col in numeric_cols:
             if col in df.columns:
-                df[col] = pd.to_numeric(df[col], errors='coerce').fillna(Decimal(0)).apply(Decimal)
+                df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0).apply(Decimal)
             else:
                 df[col] = Decimal(0)
 
@@ -272,6 +282,9 @@ def analyze_contract_trades(df, threshold_hours=24):
                             "quantity": matched_qty
                         })
 
+                        # Deduct the already-allocated fee from open_pos so that
+                        # subsequent partial matches do not double-count it.
+                        open_pos['Fee Paid'] -= open_fee_part
                         open_pos['Quantity'] -= matched_qty
                         qty_to_close -= matched_qty
 
@@ -301,7 +314,9 @@ def analyze_contract_trades(df, threshold_hours=24):
         }
         
         agg_trades = trades_df.groupby('close_time').agg(agg_funcs)
-        weighted_holding = trades_df.groupby('close_time').apply(weighted_avg, 'holding_period_seconds', 'quantity')
+        weighted_holding = trades_df.groupby('close_time').apply(
+            lambda grp: weighted_avg(grp, 'holding_period_seconds', 'quantity')
+        )
         agg_trades['holding_period_seconds'] = weighted_holding
         agg_trades = agg_trades.reset_index()
 
@@ -329,6 +344,7 @@ def analyze_contract_trades(df, threshold_hours=24):
             chart_data.append(float(trade['cumulative_pnl']))
 
         analysis_result = {
+            "analysis_type": "contract",
             "kpi": {
                 "totalPnl": float(total_net_pnl),
                 "tradeCount": len(grouped_trades),
